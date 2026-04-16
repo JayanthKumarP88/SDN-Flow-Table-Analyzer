@@ -49,5 +49,4 @@ Wireshark captures confirm the OpenFlow 1.0 protocol exchanges, including `OFPT_
 ---
 **Submitted By:** Jayanth Kumar P  
 **SRN:** PES1UG24CS199  
-**Degree:** Electronics and Instrumentation Engineering  
 **University:** PES University
