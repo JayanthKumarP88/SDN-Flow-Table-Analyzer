@@ -47,6 +47,5 @@ Verification of OpenFlow protocol messages, specifically `OFPT_STATS_REQUEST` an
 [PLACEHOLDER: image_cac92b.png - Wireshark Capture]
 
 ---
-**Author:** Jayanth Kumar P  
-**Course:** Electronics and Instrumentation Engineering  
+**Author:** Jayanth Kumar P   
 **University:** PES University
