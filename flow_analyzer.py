@@ -10,36 +10,32 @@ class FlowAnalyzer (object):
         self.connection = connection
         connection.addListeners(self)
         self.mac_to_port = {}
-        # Poll every 10 seconds for Project 8 requirements
+        # Project 8: Poll switch for stats every 10s
         Timer(10, self._request_stats, recurring=True)
 
     def _request_stats (self):
-        """Stats request with proper OpenFlow header wrapping."""
+        # Send OpenFlow stats request to switch
         stats_req = of.ofp_stats_request(body=of.ofp_flow_stats_request())
         self.connection.send(stats_req)
 
     def _handle_FlowStatsReceived (self, event):
-        """Displays rule details and identifies active vs unused [Project 8]."""
+        # Process received stats; distinguish ACTIVE vs UNUSED via packet_count
         stats = event.stats
-        dpid = event.connection.dpid
-        print("\n--- [Analyzer] Flow Table for Switch s{} ---".format(dpid))
+        print("\n--- [Analyzer] Flow Table for Switch s{} ---".format(event.connection.dpid))
         
         if not stats:
             print("Status: EMPTY | No flows installed.")
             return
 
         for f in stats:
-            # Check packet_count to identify active vs unused rules [Project 8]
             status = "ACTIVE" if f.packet_count > 0 else "UNUSED"
             print("Status: {} | Priority: {} | Packets: {} | Bytes: {}".format(
                 status, f.priority, f.packet_count, f.byte_count))
 
     def _handle_PacketIn (self, event):
-        """Learning switch logic with idle_timeout for table management."""
+        # Learning switch logic with 30s idle_timeout for dynamic cleanup
         packet = event.parsed
-        if not packet.parsed: return
-        
-        if packet.type == packet.LLDP_TYPE or packet.type == packet.IPV6_TYPE:
+        if not packet.parsed or packet.type in [packet.LLDP_TYPE, packet.IPV6_TYPE]:
             return
 
         self.mac_to_port[packet.src] = event.port
@@ -48,14 +44,12 @@ class FlowAnalyzer (object):
             out_port = self.mac_to_port[packet.dst]
             msg = of.ofp_flow_mod()
             msg.match = of.ofp_match.from_packet(packet, event.port)
-            
-            # REQUIREMENT: Set idle_timeout to show dynamic changes 
-            msg.idle_timeout = 30 
-            
+            msg.idle_timeout = 30 # Rules expire after 30s of inactivity
             msg.actions.append(of.ofp_action_output(port = out_port))
             msg.data = event.ofp
             self.connection.send(msg)
         else:
+            # Flood if destination is unknown
             msg = of.ofp_packet_out()
             msg.actions.append(of.ofp_action_output(port = of.OFPP_FLOOD))
             msg.data = event.ofp
